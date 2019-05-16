@@ -76,7 +76,11 @@ def convert_number_to_array (number, array_size):
     
 # 損失関数(二乗和誤差)
 def mean_aquarde_error(y, t):
-  return 0.5 * np.sum((y - t) ** 2)
+  if y.ndim == 1:
+    t = t.reahspe(1, t.size)
+    y = y.reahspe(1, y.size)
+  batch_size = y.shape[0]
+  return 0.5 * np.sum((y - t) ** 2) / batch_size
   
 # 損失関数(交差エントロピー誤差)
 def cross_entropy_error(y, t):
@@ -84,9 +88,44 @@ def cross_entropy_error(y, t):
     t = t.reahspe(1, t.size)
     y = y.reahspe(1, y.size)
   batch_size = y.shape[0]
-  delta = 1e-7 #np.log(y)が無限大になるのを防ぐ
+  delta = 1e-7 #np.log(y)が無限大マイナスになるのを防ぐ
   return - np.sum(t * np.log(y + delta)) / batch_size
   
+def caliculate_accuracy(y, t):
+  y = np.argmax(y, axis=1)
+  t = np.argmax(t, axis=1)
+  return np.sum(y == t) / float(y.shape[0])
+
+# 勾配計算
+def numerical_gradient(f, x):
+  h = 1e-4
+  grad = np.zeros_like(x)
+  
+  it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
+  while not it.finished:
+    idx = it.multi_index
+    tmp_val = x[idx]
+    x[idx] = tmp_val + h
+    fxh1 = f(x)
+    
+    x[idx] = tmp_val - h
+    fxh2 = f(x)
+    
+    grad[idx] = (fxh1 - fxh2) / (2 * h)
+    x[idx] = tmp_val
+    it.iternext()
+
+  return grad
+    
+# 勾配法
+def gradient_descent(f, init_x, lr=0.01, step_num=100):
+  x = init_x
+  for i in range(step_num):
+    grad = numerical_gradient(f, x)
+    x -= lr * grad
+  return x
+    
+    
 iris_data = get_iris_data('./data.csv')
 B1 = generate_bias(100)
 B2 = generate_bias(100)
@@ -94,10 +133,6 @@ B3 = generate_bias(100)
 
 train_iris_data, test_iris_data = split_iris_data(iris_data, 0.8)
 
-## train_iris_data_features = list(map(lambda iris: iris["feature"], train_iris_data))
-## train_iris_data_labels = list(map(lambda iris: iris["label"], train_iris_data))
-## test_iris_data_features = list(map(lambda iris: iris["feature"], test_iris_data))
-## test_iris_data_labels = list(map(lambda iris: iris["label"], test_iris_data))
 
 epochs = 100  
 batch_size = 10
@@ -121,13 +156,17 @@ for i in range(epochs):
   y = np.array(list(map(lambda output: soft_max(output), Z3)))
   print(y)
   print(iris_labels)
-  print(mean_aquarde_error(y, iris_labels) / batch_size)
+  print(mean_aquarde_error(y, iris_labels))
   print(cross_entropy_error(y, iris_labels))
+  print(cross_entropy_error(y, iris_labels))
+  # W1 = gradient_descent(cross_entropy_error, W1)
+  print(caliculate_accuracy(y, iris_labels))
+  grad = {}
 
-  
-  
-
-
+  # numerical_gradient先でW1の値が更新されるが,cross~では参照先を変えていないので,すべて値が0になる
+  # かなり変更しなきゃだめっぽい
+  grad['W1'] = numerical_gradient(lambda w: cross_entropy_error(y, iris_labels), W1)
+  print(grad)
 # H1 = np.dot()
 
 
