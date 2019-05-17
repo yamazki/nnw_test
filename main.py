@@ -100,7 +100,6 @@ def caliculate_accuracy(y, t):
 def numerical_gradient(f, x):
   h = 1e-4
   grad = np.zeros_like(x)
-  
   it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
   while not it.finished:
     idx = it.multi_index
@@ -125,12 +124,21 @@ def gradient_descent(f, init_x, lr=0.01, step_num=100):
     x -= lr * grad
   return x
     
-    
+def predict(network, iris_features, iris_labels):
+  network = init_network()
+  W1, W2, W3 = network['W1'], network['W2'], network['W3']
+  B1, B2, B3 = network['B1'], network['B2'], network['B3']
+  A1 = np.dot(iris_features, W1) + B1
+  Z1 = sigmoid(A1)
+  A2 = np.dot(Z1, W2) + B2
+  Z2 = sigmoid(A2)
+  A3 = np.dot(Z2, W3) + B3
+  Z3 = sigmoid(A3)
+  y = np.array(list(map(lambda output: soft_max(output), Z3)))
+  return y
+  
+  
 iris_data = get_iris_data('./data.csv')
-B1 = generate_bias(100)
-B2 = generate_bias(100)
-B3 = generate_bias(100)
-
 train_iris_data, test_iris_data = split_iris_data(iris_data, 0.8)
 
 
@@ -138,22 +146,11 @@ epochs = 100
 batch_size = 10
 
 
-network = init_network()
-W1, W2, W3 = network['W1'], network['W2'], network['W3']
-B1, B2, B3 = network['B1'], network['B2'], network['B3']
-
 for i in range(epochs):
   selected_iris_data_list = random.choices(train_iris_data, k=batch_size)
   iris_features = list(map(lambda iris: iris["feature"], selected_iris_data_list))
   iris_labels   = list(map(lambda iris: convert_number_to_array(iris["label"], 3), selected_iris_data_list))
-  A1 = np.dot(iris_features, W1) + B1
-  Z1 = sigmoid(A1)
-  A2 = np.dot(Z1, W2) + B2
-  Z2 = sigmoid(A2)
-  A3 = np.dot(Z2, W3) + B3
-  Z3 = sigmoid(A3)
   
-  y = np.array(list(map(lambda output: soft_max(output), Z3)))
   print(y)
   print(iris_labels)
   print(mean_aquarde_error(y, iris_labels))
@@ -163,8 +160,9 @@ for i in range(epochs):
   print(caliculate_accuracy(y, iris_labels))
   grad = {}
 
-  # numerical_gradient先でW1の値が更新されるが,cross~では参照先を変えていないので,すべて値が0になる
-  # かなり変更しなきゃだめっぽい
+  # numerical_gradient先でW1の値が更新されるが,cross~では参照先を変えていないので,微分の値がすべて値が0になる
+  # 関数の参照先のWが変更されてる
+  # かなり変更しなきゃだめっぽい,参照透過性を意識
   grad['W1'] = numerical_gradient(lambda w: cross_entropy_error(y, iris_labels), W1)
   print(grad)
 # H1 = np.dot()
