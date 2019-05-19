@@ -1,8 +1,8 @@
 import csv 
 import random
 import numpy as np
-import json
 import pickle
+
 # filepathに格納されているirisのデータを
 # {"feature" : np.array(irisの特徴量), "iris_type" : irisの種類} リストで返す
 def get_iris_data(filepath):
@@ -98,8 +98,7 @@ def caliculate_accuracy(y, t):
   return float(np.sum(y == t) / float(y.shape[0]))
   
 def loss(network, iris_features, iris_labels):
-  t = iris_labels
-  return numerical_gradient(lambda net: cross_entropy_error(predict(net, iris_features), t), network)
+  return numerical_gradient(lambda net: cross_entropy_error(predict(net, iris_features), iris_labels), network)
 
 # 勾配計算
 def numerical_gradient(f, network):
@@ -148,32 +147,28 @@ def predict(network, iris_features):
   
 if __name__ == '__main__':
   iris_data = get_iris_data('./data.csv')
-  train_iris_data, test_iris_data = split_iris_data(iris_data, 0.8)
   epochs = 1000 
-  batch_size = 10
+  batch_size = 3
   leaning_rate = 0.1
-  
   # network = init_network()
   network = init_network('./leaning_data.pickle')
   for i in range(epochs):
-    selected_iris_data_list = random.choices(train_iris_data, k=batch_size)
-    iris_features = list(map(lambda iris: iris["feature"], selected_iris_data_list))
-    iris_labels   = list(map(lambda iris: convert_number_to_array(iris["label"], 3), selected_iris_data_list))
-    y = predict(network, iris_features)
-    grads = loss(network, iris_features, iris_labels)
-    # W1 = gradient_descent(cross_entropy_error, W1)
-    for key in network.keys(): 
-      network[key] -= leaning_rate * grads[key]
+    train_iris_data, test_iris_data = split_iris_data(iris_data, 0.8)
+    devided_train_iris_data_list = [train_iris_data[i::batch_size] for i in range(batch_size)]
+    for devided_train_iris_data in devided_train_iris_data_list:
+      train_iris_features = list(map(lambda iris: iris["feature"], devided_train_iris_data))
+      train_iris_labels   = list(map(lambda iris: convert_number_to_array(iris["label"], 3), devided_train_iris_data))
+      grads = loss(network, train_iris_features, train_iris_labels)
+      for key in network.keys(): 
+        network[key] -= leaning_rate * grads[key]
+    test_iris_features = list(map(lambda iris: iris["feature"], test_iris_data))
+    test_iris_labels   = list(map(lambda iris: convert_number_to_array(iris["label"], 3), test_iris_data))
+    result = predict(network, test_iris_features)
     print("loss: ", end="")
-    print(cross_entropy_error(y, iris_labels))
-    print("accuracy: ", end="")
-    print(caliculate_accuracy(y, iris_labels))
-    # numerical_gradient先でW1の値が更新されるが,cross~では参照先を変えていないので,微分の値がすべて値が0になる
-    # 関数の参照先のWが変更されてる
-    # かなり変更しなきゃだめっぽい,参照透過性を意識
-    # grad['W1'] = numerical_gradient(lambda w: cross_entropy_error(y, iris_labels), W1)
-  # H1 = np.dot()
-  
+    print(cross_entropy_error(result, test_iris_labels))
+    print('accuracy: ', end="")
+    print(caliculate_accuracy(result, test_iris_labels))
+
   with open('./learning_data.pickle', mode='wb') as fo:
     pickle.dump(network, fo)
 
