@@ -32,7 +32,7 @@ def split_iris_data(iris_data, split):
 # input_sizeは行数
 # hidden_sizeは列数
 def generate_weight(input_size, hidden_size):
-  return np.random.randn(input_size, hidden_size)
+  return  0.01 * np.random.randn(input_size, hidden_size)
       
 def generate_bias(hidden_size):
   return np.zeros(hidden_size)
