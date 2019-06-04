@@ -32,7 +32,7 @@ def split_iris_data(iris_data, split):
 # input_sizeは行数
 # hidden_sizeは列数
 def generate_weight(input_size, hidden_size):
-  return  0.01 * np.random.randn(input_size, hidden_size)
+  return  np.random.randn(input_size, hidden_size)
       
 def generate_bias(hidden_size):
   return np.zeros(hidden_size)
@@ -54,11 +54,11 @@ def soft_max(a):
 def init_network(path=None):
   if(path == None):
     network = {}
-    network['W1'] = generate_weight(3, 100) 
-    network['W2'] = generate_weight(100, 100) 
-    network['W3'] = generate_weight(100, 3) 
-    network['B1'] = generate_bias(100)
-    network['B2'] = generate_bias(100)
+    network['W1'] = generate_weight(3, 20) 
+    network['W2'] = generate_weight(20, 20) 
+    network['W3'] = generate_weight(20, 3) 
+    network['B1'] = generate_bias(20)
+    network['B2'] = generate_bias(20)
     network['B3'] = generate_bias(3)
     return network
   with open('./learning_data.pickle', mode='rb') as fo:
@@ -150,10 +150,11 @@ if __name__ == '__main__':
   epochs = 1000 
   batch_size = 3
   leaning_rate = 0.1
-  # network = init_network()
-  network = init_network('./leaning_data.pickle')
+  network = init_network()
+  # network = init_network('./leaning_data.pickle')
+  
+  train_iris_data, test_iris_data = split_iris_data(iris_data, 0.8)
   for i in range(epochs):
-    train_iris_data, test_iris_data = split_iris_data(iris_data, 0.8)
     devided_train_iris_data_list = [train_iris_data[i::batch_size] for i in range(batch_size)]
     for devided_train_iris_data in devided_train_iris_data_list:
       train_iris_features = list(map(lambda iris: iris["feature"], devided_train_iris_data))
@@ -171,7 +172,6 @@ if __name__ == '__main__':
 
   with open('./learning_data.pickle', mode='wb') as fo:
     pickle.dump(network, fo)
-
 
 
 
